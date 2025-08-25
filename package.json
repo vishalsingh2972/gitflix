@@ -20,5 +20,9 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "openai": "^5.15.0",
+    "remarkable": "^2.0.1"
+  }
 }
