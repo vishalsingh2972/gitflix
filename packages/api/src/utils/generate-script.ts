@@ -1,7 +1,7 @@
 import { OpenAI } from 'openai';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 export async function generateCinematicScript(projectInfo: any): Promise<string> {
@@ -26,13 +26,18 @@ Add [MUSIC SWELL], [CODE GLITCH], [SCREEN FLASH] as cues.
 Script:
 `;
 
-  const  response = await openai.completions.create({
-    model: 'gpt-4o',
-    prompt,
-    max_tokens: 180,
-    temperature: 0.9,
-    stop: null,
-  });
+  try {
+    const response = await openai.completions.create({
+      model: 'gpt-4o',
+      prompt,
+      max_tokens: 180,
+      temperature: 0.9,
+      stop: null,
+    });
 
-  return response.choices[0].text.trim();
+    return response.choices[0].text.trim();
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    throw new Error('Failed to generate script');
+  }
 }
