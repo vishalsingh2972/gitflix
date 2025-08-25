@@ -4,12 +4,15 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:3001/api/:path*', // Your Express backend
+        destination: 'http://localhost:3001/api/:path*', // proxy API
+      },
+      {
+        source: '/videos/:path*',
+        destination: 'http://localhost:3001/videos/:path*', // proxy videos
       },
     ];
   },
 
-  // Optional: Disable React strict mode if causing double renders in dev
   reactStrictMode: false,
 };
 

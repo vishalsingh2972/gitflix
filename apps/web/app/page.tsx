@@ -10,7 +10,10 @@ export default function Home() {
   const [projectInfo, setProjectInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoStatus, setVideoStatus] = useState('');
 
+  // Generate script from GitHub repo
   const generateTrailer = async () => {
     if (!repoUrl.trim()) {
       setError('Please enter a valid GitHub repository URL');
@@ -21,6 +24,8 @@ export default function Home() {
     setError('');
     setScript('');
     setProjectInfo(null);
+    setVideoUrl('');
+    setVideoStatus('');
 
     try {
       const res = await fetch('/api/generate-script', {
@@ -44,6 +49,30 @@ export default function Home() {
     }
   };
 
+  // Generate video trailer (mock for now)
+  const generateVideo = async () => {
+    setVideoStatus('Generating video...');
+    try {
+      const res = await fetch('/api/generate-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoUrl }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to generate video');
+      }
+
+      const data = await res.json();
+      setVideoUrl(data.videoUrl);
+      setVideoStatus('');
+    } catch (err: any) {
+      setVideoStatus('Failed to generate video');
+    }
+  };
+
+  // Copy script to clipboard
   const copyScript = () => {
     navigator.clipboard.writeText(script);
     alert('Script copied to clipboard!');
@@ -84,7 +113,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Output */}
+        {/* Script Output */}
         {script && (
           <Card className="bg-gray-900 border-green-700 mb-6">
             <CardHeader>
@@ -94,16 +123,49 @@ export default function Home() {
               <pre className="whitespace-pre-wrap text-sm bg-black p-4 border border-gray-700 rounded mb-4 text-green-400">
                 {script}
               </pre>
-              <Button onClick={copyScript} className="bg-gray-700 hover:bg-gray-600">
+              <Button onClick={copyScript} className="bg-gray-700 hover:bg-gray-600 text-white">
                 📋 Copy Script
               </Button>
             </CardContent>
           </Card>
         )}
 
+        {/* Video Generation Button */}
+        {script && !videoUrl && (
+          <div className="text-center mb-6">
+            <Button
+              onClick={generateVideo}
+              disabled={!!videoStatus}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6"
+            >
+              {videoStatus ? 'Generating...' : '🎥 Generate Video Trailer'}
+            </Button>
+            {videoStatus && <p className="text-yellow-400 text-sm mt-2">{videoStatus}</p>}
+          </div>
+        )}
+
+        {/* Video Output */}
+        {videoUrl && (
+          <div className="mt-8 animate-fade-in text-center">
+            <h3 className="text-2xl font-bold text-green-300 mb-4">🎬 Your Trailer is Ready!</h3>
+            <video
+              src={videoUrl}
+              controls
+              className="w-full max-w-2xl mx-auto rounded border-2 border-green-700 bg-black"
+            />
+            <a
+              href={videoUrl}
+              download={`${projectInfo?.name || 'trailer'}-trailer.mp4`}
+              className="mt-4 inline-block px-6 py-2 bg-green-600 hover:bg-green-500 text-black font-bold rounded transition"
+            >
+              💾 Download Trailer
+            </a>
+          </div>
+        )}
+
         {/* Project Info */}
-        {projectInfo && (
-          <div className="text-sm text-gray-400 space-y-1">
+        {projectInfo && !videoUrl && (
+          <div className="text-sm text-gray-400 space-y-1 mt-6">
             <p>
               <strong>Repo:</strong> {projectInfo.name}
             </p>
@@ -135,6 +197,17 @@ export default function Home() {
           <br />
           <em>"Star the repo. Join the movement."</em>
         </footer>
+
+        {/* Optional: Fade-in animation */}
+        <style jsx>{`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          .animate-fade-in {
+            animation: fadeIn 0.6s ease-in;
+          }
+        `}</style>
       </div>
     </div>
   );
