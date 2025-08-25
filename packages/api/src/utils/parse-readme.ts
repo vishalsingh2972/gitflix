@@ -1,19 +1,21 @@
-
-
 console.log('🎯 Loading parse-readme.ts');
 
+// ✅ Explicitly type Remarkable as any (since remarkable has no proper types)
+let Remarkable: any;
+
 try {
-  const Remarkable = require('remarkable');
+  Remarkable = require('remarkable');
   console.log('✅ remarkable loaded:', typeof Remarkable);
   console.log('🔍 Is Remarkable a function?', typeof Remarkable === 'function');
+
   if (typeof Remarkable !== 'function') {
     console.error('❌ Remarkable is not a constructor:', Remarkable);
+    Remarkable = null;
   }
 } catch (err) {
   console.error('💥 Error loading remarkable:', err);
+  Remarkable = null;
 }
-
-const Remarkable = require('remarkable');
 
 type Token = any;
 
@@ -25,49 +27,50 @@ type RawInfo = {
 
 export function extractProjectInfo({ name, description, readme }: RawInfo) {
   console.log('🔧 extractProjectInfo called');
-  console.log('📝 README length:', readme.length);
+  console.log('📝 README length:', readme?.length);
 
-  // ✅ SAFETY: If README is too short, skip parsing
+  // ✅ Guard: if no valid README
   if (!readme || typeof readme !== 'string' || readme.length < 50) {
     console.warn('⚠️ Skipping README parse: too short or invalid');
     return {
       name,
       description: description || 'A powerful open-source project',
-      problem: 'Solves common development challenges',
-      solution: 'With clean, scalable architecture',
-      features: ['Fast', 'Reliable', 'Well-documented'],
-      techStack: ['JavaScript', 'TypeScript', 'Node.js'], // fallback
+      problem: 'Solves real-world problems',
+      solution: 'With clean, modern architecture',
+      features: ['Open Source', 'Well Documented', 'Community Driven'],
+      techStack: ['JavaScript', 'TypeScript', 'Node.js'],
       stars: 0,
-      url: `https://github.com/${name}`,
-      readmePreview: readme || 'No README available',
+      url: `https://github.com/${name.trim()}`,
+      readmePreview: readme?.slice(0, 200) || 'No README available',
+    };
+  }
+
+  // ✅ Guard: if remarkable failed to load
+  if (!Remarkable) {
+    console.error('❌ Remarkable not available');
+    return {
+      name,
+      description: description || 'A powerful open-source project',
+      problem: 'Improves developer experience',
+      solution: 'With modern tooling and architecture',
+      features: ['Fast', 'Reliable', 'Scalable'],
+      techStack: ['JavaScript', 'TypeScript', 'Node.js'],
+      stars: 0,
+      url: `https://github.com/${name.trim()}`,
+      readmePreview: readme.slice(0, 200),
     };
   }
 
   try {
     const md = new Remarkable();
     console.log('✅ Remarkable instance created');
-    
-    let tokens: any[] = [];
-    try {
-      tokens = md.parse(readme);
-    } catch (parseErr) {
-      console.error('❌ Markdown parse failed:', parseErr);
-      throw new Error('Invalid Markdown');
-    }
-
+    const tokens: Token[] = md.parse(readme);
     console.log('✅ Parsed tokens count:', tokens.length);
 
     const sections: Record<string, string> = {};
     let currentSection = 'INTRO';
 
-    // ✅ Guard against undefined tokens
-    if (!Array.isArray(tokens)) {
-      console.error('❌ Tokens is not an array:', tokens);
-      throw new Error('Parser returned invalid tokens');
-    }
-
-    tokens.forEach((token: any, index: number) => {
-      // ✅ Skip if token is undefined
+    tokens.forEach((token: Token, index: number) => {
       if (!token) return;
 
       if (token.type === 'heading_open' && token.level === 2) {
@@ -93,11 +96,11 @@ export function extractProjectInfo({ name, description, readme }: RawInfo) {
 
     const clean = (text: string) => text.replace(/\s+/g, ' ').trim().slice(0, 500);
 
-    const result = {
+    return {
       name,
       description: description || clean(sections.intro || sections.description || ''),
-      problem: clean(sections.problem || ''),
-      solution: clean(sections.solution || ''),
+      problem: clean(sections.problem || sections['what it solves'] || ''),
+      solution: clean(sections.solution || sections['how it works'] || ''),
       features: Array.from(
         new Set(
           (sections.features || sections.usage || '')
@@ -109,38 +112,60 @@ export function extractProjectInfo({ name, description, readme }: RawInfo) {
       ),
       techStack: extractTechStack(readme),
       stars: 0,
-      url: `https://github.com/${name}`,
+      url: `https://github.com/${name.trim()}`,
       readmePreview: readme.slice(0, 200),
     };
-
-    console.log('✅ extractProjectInfo success');
-    return result;
   } catch (error: any) {
     console.error('❌ extractProjectInfo failed:', error.message || error);
-    
-    // ✅ Fallback even on error
     return {
       name,
       description: description || 'A powerful open-source project',
       problem: 'Improves developer experience',
       solution: 'With modern tooling and architecture',
       features: ['Open Source', 'Well Maintained', 'Community Driven'],
-      techStack: ['JavaScript', 'TypeScript', 'React'],
+      techStack: ['JavaScript', 'TypeScript', 'Node.js'],
       stars: 0,
-      url: `https://github.com/${name}`,
+      url: `https://github.com/${name.trim()}`,
       readmePreview: readme.slice(0, 200),
     };
   }
 }
 
-function extractTechStack(readme: string): string[] {
-  const techKeywords = [
-    'React', 'Next.js', 'Node.js', 'TypeScript', 'Tailwind', 'Docker',
-    'PostgreSQL', 'Redis', 'AWS', 'Kubernetes', 'Prisma', 'Zod', 'Clerk',
-    'WebRTC', 'Socket.IO', 'Kafka', 'FFmpeg', 'Pika', 'ElevenLabs'
-  ];
+function extractTechStack(readme: string | undefined): string[] {
+  if (!readme || typeof readme !== 'string') return ['JavaScript'];
 
-  return techKeywords.filter(keyword =>
-    new RegExp(`\\b${keyword.replace('.', '\\.')}`, 'i').test(readme)
-  );
+  const techMap: Record<string, string> = {
+    'node.js': 'Node.js',
+    'express': 'Express',
+    'typescript': 'TypeScript',
+    'javascript': 'JavaScript',
+    'react': 'React',
+    'next.js': 'Next.js',
+    'docker': 'Docker',
+    'kubernetes': 'Kubernetes',
+    'redis': 'Redis',
+    'postgresql': 'PostgreSQL',
+    'aws': 'AWS',
+    'kafka': 'Kafka',
+    'web3': 'Web3.js',
+    'ethereum': 'Ethereum',
+    'solidity': 'Solidity',
+    'hardhat': 'Hardhat',
+    'ganache': 'Ganache',
+    'metamask': 'MetaMask'
+  };
+
+  const found = new Set<string>();
+  const lower = readme.toLowerCase();
+
+  Object.keys(techMap).forEach(tech => {
+    if (lower.includes(tech)) {
+      const value = techMap[tech];
+      if (value) { // ✅ Type guard: ensure it's not undefined
+        found.add(value);
+      }
+    }
+  });
+
+  return Array.from(found).filter(t => t !== 'React').slice(0, 6);
 }
