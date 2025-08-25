@@ -7,40 +7,53 @@ export const fetchRepoRouter = Router();
 
 // Utility: Fetch repo data (reusable)
 async function fetchRepoData(repoUrl: string) {
-  const trimmed = repoUrl.replace(/\/$/, '');
-  const match = trimmed.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+  // Clean and parse URL
+  const trimmed = repoUrl.trim().replace(/\/+$/, '');
+  const match = trimmed.match(/github\.com\/([^\/]+)\/([^\/]+)$/i);
 
   if (!match) {
-    throw new Error('Invalid GitHub URL');
+    throw new Error('Invalid GitHub URL. Expected format: https://github.com/owner/repo');
   }
 
   const [, owner, repo] = match;
 
   // Fetch repo metadata
-  const { data: repoData } = await axios.get(
-    `https://api.github.com/repos/${owner}/${repo}`,
-    {
+  let repoData;
+  try {
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}`, {
       headers: {
-        Authorization: `token ${process.env.GITHUB_TOKEN}`,
+        Authorization: process.env.GITHUB_TOKEN ? `token ${process.env.GITHUB_TOKEN}` : '',
+        'User-Agent': 'Gitflix-Trailer-Generator',
       },
+    });
+    repoData = response.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      throw new Error('Repository not found');
+    } else if (error.response?.status === 403) {
+      throw new Error('GitHub API rate limit exceeded. Check GITHUB_TOKEN.');
+    } else {
+      throw new Error(`Failed to fetch repo data: ${error.message}`);
     }
-  );
+  }
 
   // Fetch README
-  let readmeText = '';
+  let readmeText = '_README not found._';
   try {
-    const { data: readmeData } = await axios.get(
-      `https://raw.githubusercontent.com/${owner}/${repo}/main/README.md`
+    const { data } = await axios.get(
+      `https://raw.githubusercontent.com/${owner}/${repo}/main/README.md`,
+      { responseType: 'text' }
     );
-    readmeText = readmeData;
-  } catch {
+    readmeText = data;
+  } catch (mainErr) {
     try {
-      const { data: readmeData } = await axios.get(
-        `https://raw.githubusercontent.com/${owner}/${repo}/master/README.md`
+      const { data } = await axios.get(
+        `https://raw.githubusercontent.com/${owner}/${repo}/master/README.md`,
+        { responseType: 'text' }
       );
-      readmeText = readmeData;
-    } catch {
-      readmeText = '_README not found._';
+      readmeText = data;
+    } catch (masterErr) {
+      console.warn(`[fetchRepoData] No README found in 'main' or 'master' for ${owner}/${repo}`);
     }
   }
 
