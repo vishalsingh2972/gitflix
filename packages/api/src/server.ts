@@ -1,24 +1,21 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { fetchRepoRouter } from './routes/fetch-repo';
 import { generateVideoRouter } from './routes/generate-video';
 
-dotenv.config();
+// Debug: Log key presence
+console.log('🔑 ELEVENLABS_API_KEY loaded:', !!process.env.ELEVENLABS_API_KEY ? 'YES' : 'NO');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'API is running 🚀' });
-});
-
 app.use('/api', fetchRepoRouter);
 app.use('/api', generateVideoRouter);
-
 app.use('/videos', express.static('public/videos'));
+app.use('/audio', express.static('public/audio'));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
