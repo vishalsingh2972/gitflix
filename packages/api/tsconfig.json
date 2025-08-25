@@ -2,7 +2,9 @@
   "extends": "@repo/typescript-config/nodejs.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "incremental": true,
+    "tsBuildInfoFile": "dist/tsconfig.api.tsbuildinfo"
   },
   "include": ["src"]
 }
