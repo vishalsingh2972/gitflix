@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { fetchRepoRouter } from './routes/fetch-repo';
+import { generateVideoRouter } from './routes/generate-video';
 
 dotenv.config();
 
@@ -15,6 +16,9 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api', fetchRepoRouter);
+app.use('/api', generateVideoRouter);
+
+app.use('/videos', express.static('public/videos'));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

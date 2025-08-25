@@ -6,7 +6,7 @@ import { generateCinematicScript } from '../utils/generate-script';
 export const fetchRepoRouter = Router();
 
 // Utility: Fetch repo data (reusable)
-async function fetchRepoData(repoUrl: string) {
+export async function fetchRepoData(repoUrl: string) {
   // Clean and parse URL
   const trimmed = repoUrl.trim().replace(/\/+$/, '');
   const match = trimmed.match(/github\.com\/([^\/]+)\/([^\/]+)$/i);
