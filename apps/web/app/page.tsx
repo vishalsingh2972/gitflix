@@ -14,6 +14,8 @@ export default function Home() {
   const [videoUrl, setVideoUrl] = useState('');
   const [videoStatus, setVideoStatus] = useState('');
   const [copied, setCopied] = useState(false);
+  const [audioUrl, setAudioUrl] = useState('');
+  const [audioLoading, setAudioLoading] = useState(false);
 
   // Generate script from GitHub repo
   const generateTrailer = async () => {
@@ -28,6 +30,7 @@ export default function Home() {
     setProjectInfo(null);
     setVideoUrl('');
     setVideoStatus('');
+    setAudioUrl('');
 
     try {
       const res = await fetch('/api/generate-script', {
@@ -81,6 +84,31 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Generate and play audio from script
+  const playAudio = async () => {
+    if (!script) return;
+    setAudioLoading(true);
+    try {
+      const res = await fetch('/api/generate-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ script }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to generate audio');
+      }
+
+      const data = await res.json();
+      setAudioUrl(data.audioUrl);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAudioLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono">
       <div className="max-w-6xl mx-auto px-6 py-10">
@@ -124,7 +152,7 @@ export default function Home() {
                       type="text"
                       value={repoUrl}
                       onChange={(e) => setRepoUrl(e.target.value)}
-                      placeholder="https://github.com/vishalsingh2972/Simple-DEX"
+                      placeholder="https://github.com/vishalsingh2972/Simple-DEX  "
                       className="w-full p-4 rounded-lg bg-gray-800 border-2 border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     />
                   </div>
@@ -304,6 +332,24 @@ export default function Home() {
                             )}
                           </AnimatePresence>
                         </div>
+
+                        {/* 🎵 Play Script Audio Section */}
+                        {script && (
+                          <div className="mt-4 text-center">
+                            <Button
+                              onClick={playAudio}
+                              disabled={audioLoading || !!audioUrl}
+                              className="bg-purple-600 hover:bg-purple-700 text-white"
+                            >
+                              ▶️ {audioLoading ? 'Generating Audio...' : 'Play Script Audio'}
+                            </Button>
+                            {audioUrl && (
+                              <div className="mt-4">
+                                <audio src={audioUrl} controls className="inline-block" />
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
