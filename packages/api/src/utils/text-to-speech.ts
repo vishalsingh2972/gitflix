@@ -20,7 +20,7 @@ export async function generateVoiceover(text: string): Promise<Buffer> {
       voice: 'Rachel',
       model_id: 'eleven-monolingual-v1',
       text,
-      stream: false, // important: false = return full audio
+      stream: true, // important: false = return full audio
     });
 
     // Collect audio chunks
